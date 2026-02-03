@@ -7,6 +7,12 @@ import rego.v1
 #
 rule_data_defaults := {
 	#
+	# Used in release/maven_repos/maven_repos.rego
+	"allowed_maven_repositories": [
+		"https://indy.corp.redhat.com",
+		"https://maven.repository.redhat.com/ga/",
+	],
+	#
 	# Used in release/attestation_type
 	"known_attestation_types": [
 		"https://in-toto.io/Statement/v0.1",
