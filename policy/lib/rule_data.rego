@@ -11,7 +11,7 @@ rule_data_defaults := {
 	"known_attestation_types": ["https://in-toto.io/Statement/v0.1"],
 	#
 	# Used in release/slsa_provenance_available
-	"allowed_predicate_types": ["https://slsa.dev/provenance/v0.2"],
+	"allowed_predicate_types": ["https://slsa.dev/provenance/v0.2", "https://slsa.dev/provenance/v1"],
 	#
 	# Used in release/slsa_build_build_service
 	"allowed_builder_ids": ["https://tekton.dev/chains/v2"],
