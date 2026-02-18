@@ -8,7 +8,10 @@ import rego.v1
 rule_data_defaults := {
 	#
 	# Used in release/attestation_type
-	"known_attestation_types": ["https://in-toto.io/Statement/v0.1"],
+	"known_attestation_types": [
+		"https://in-toto.io/Statement/v0.1",
+		"https://in-toto.io/Statement/v1",
+	],
 	#
 	# Used in release/slsa_provenance_available
 	"allowed_predicate_types": ["https://slsa.dev/provenance/v0.2", "https://slsa.dev/provenance/v1"],

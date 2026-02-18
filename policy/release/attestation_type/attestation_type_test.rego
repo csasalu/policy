@@ -7,6 +7,8 @@ import data.lib
 
 good_type := "https://in-toto.io/Statement/v0.1"
 
+good_type_v1 := "https://in-toto.io/Statement/v1"
+
 bad_type := "https://in-toto.io/Statement/v0.0.9999999"
 
 mock_data(att_type) := [{"statement": {
@@ -16,6 +18,7 @@ mock_data(att_type) := [{"statement": {
 
 test_allow_when_permitted if {
 	lib.assert_empty(attestation_type.deny) with input.attestations as mock_data(good_type)
+	lib.assert_empty(attestation_type.deny) with input.attestations as mock_data(good_type_v1)
 }
 
 test_deny_when_not_permitted if {
