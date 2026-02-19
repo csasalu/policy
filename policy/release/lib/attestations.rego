@@ -188,3 +188,11 @@ result_values(result) := value if {
 	result.type == "object"
 	value := {v | some v in result.value}
 }
+
+attestation_materials(att) := att.statement.predicate.buildDefinition.resolvedDependencies if {
+	# slsa v1 attestations
+	att.statement.predicateType == slsa_provenance_predicate_type_v1
+} else := att.statement.predicate.materials if {
+	# slsa v0.2 attestations
+	att.statement.predicateType == slsa_provenance_predicate_type_v02
+} else := {}

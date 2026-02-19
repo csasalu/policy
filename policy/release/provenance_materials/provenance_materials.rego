@@ -61,7 +61,7 @@ deny contains result if {
 	commit := tekton.task_result(task, "commit")
 
 	materials := [m |
-		some m in attestation.statement.predicate.materials
+		some m in lib.attestation_materials(attestation)
 		m.uri == url
 		m.digest.sha1 == commit
 	]

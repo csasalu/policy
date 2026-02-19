@@ -155,10 +155,10 @@ _expected_sources contains expected_source if {
 	}
 }
 
-# SLSA Provenance v0.2
+# SLSA Provenance
 _source_references contains ref if {
 	some att in lib.slsa_provenance_attestations
-	some material in att.statement.predicate.materials
+	some material in lib.attestation_materials(att)
 	some digest_alg in object.keys(material.digest)
 	some supported_vcs_type in lib.rule_data("supported_vcs")
 
@@ -171,27 +171,6 @@ _source_references contains ref if {
 	# note, the digest_alg is not compared, it is expected that the value
 	# matches the expected reference
 	ref := sprintf("%s@%s:%s", [material.uri, digest_alg, material.digest[digest_alg]])
-}
-
-# SLSA Provenance v1.0
-_source_references contains ref if {
-	some att in lib.slsa_provenance_attestations
-
-	# regal ignore:prefer-snake-case
-	some dep in att.statement.predicate.buildDefinition.resolvedDependencies
-	some digest_alg in object.keys(dep.digest)
-	some supported_vcs_type in lib.rule_data("supported_vcs")
-
-	# the material.uri is a kind of vcs_type, lets us ignore other, non-vcs, materials
-	startswith(dep.uri, sprintf("%s+", [supported_vcs_type]))
-
-	# make sure the digest algorithm is supported
-	digest_alg in lib.rule_data("supported_digests")
-
-	# note, the digest_alg is not compared, it is expected that the value
-	# matches the expected reference
-	# regal ignore:prefer-snake-case
-	ref := sprintf("%s@%s:%s", [dep.uri, digest_alg, dep.digest[digest_alg]])
 }
 
 _rule_data_errors contains error if {
