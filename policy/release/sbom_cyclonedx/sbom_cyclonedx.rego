@@ -12,12 +12,37 @@ import data.lib
 import data.lib.sbom
 
 # METADATA
-# title: Valid
+# title: Supported Version
 # description: >-
-#   Check the CycloneDX SBOM has the expected format. It verifies the CycloneDX SBOM matches the 1.5
+#   Check that the CycloneDX SBOM specifies a supported schema version (1.4, 1.5 or 1.6).
+# custom:
+#   short_name: cdx_supported_version
+#   failure_msg: 'CycloneDX SBOM at index %d has unsupported or missing version: %s'
+#   solution: Update the build process to produce a CycloneDX 1.4, 1.5 or 1.6 SBOM.
+#   collections:
+#   - minimal
+#   - redhat
+#   - redhat_rpms
+#
+deny contains result if {
+	some index, s in sbom.cyclonedx_sboms
+
+	# Extract the version, defaulting to "missing" if the field doesn't exist
+	version := object.get(s, "specVersion", "missing")
+
+	# Fail if it's not one of our explicitly supported versions
+	not version in {"1.4", "1.5", "1.6"}
+
+	result := lib.result_helper(rego.metadata.chain(), [index, version])
+}
+
+# METADATA
+# title: Valid 1.4
+# description: >-
+#   Check the CycloneDX SBOM has the expected format. It verifies the CycloneDX SBOM matches the 1.4
 #   version of the schema.
 # custom:
-#   short_name: valid
+#   short_name: valid_cdx_1_4
 #   failure_msg: 'CycloneDX SBOM at index %d is not valid: %s'
 #   solution: Make sure the build process produces a valid CycloneDX SBOM.
 #   collections:
@@ -27,7 +52,52 @@ import data.lib.sbom
 #
 deny contains result if {
 	some index, s in sbom.cyclonedx_sboms
+	s.specVersion == "1.4"
+	some violation in json.match_schema(s, schema_1_4)[1]
+	error := violation.error
+	result := lib.result_helper(rego.metadata.chain(), [index, error])
+}
+
+# METADATA
+# title: Valid 1.5
+# description: >-
+#   Check the CycloneDX SBOM has the expected format. It verifies the CycloneDX SBOM matches the 1.5
+#   version of the schema.
+# custom:
+#   short_name: valid_cdx_1_5
+#   failure_msg: 'CycloneDX SBOM at index %d is not valid: %s'
+#   solution: Make sure the build process produces a valid CycloneDX SBOM.
+#   collections:
+#   - minimal
+#   - redhat
+#   - redhat_rpms
+#
+deny contains result if {
+	some index, s in sbom.cyclonedx_sboms
+	s.specVersion == "1.5"
 	some violation in json.match_schema(s, schema_1_5)[1]
+	error := violation.error
+	result := lib.result_helper(rego.metadata.chain(), [index, error])
+}
+
+# METADATA
+# title: Valid 1.6
+# description: >-
+#   Check the CycloneDX SBOM has the expected format. It verifies the CycloneDX SBOM matches the 1.6
+#   version of the schema.
+# custom:
+#   short_name: valid_cdx_1_6
+#   failure_msg: 'CycloneDX SBOM at index %d is not valid: %s'
+#   solution: Make sure the build process produces a valid CycloneDX SBOM.
+#   collections:
+#   - minimal
+#   - redhat
+#   - redhat_rpms
+#
+deny contains result if {
+	some index, s in sbom.cyclonedx_sboms
+	s.specVersion == "1.6"
+	some violation in json.match_schema(s, schema_1_6)[1]
 	error := violation.error
 	result := lib.result_helper(rego.metadata.chain(), [index, error])
 }
