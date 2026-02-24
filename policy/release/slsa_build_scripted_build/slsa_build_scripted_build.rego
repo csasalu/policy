@@ -18,9 +18,6 @@ import data.lib
 import data.lib.image
 import data.lib.tekton
 
-# Batch fetch all manifests for tasks in the pipelineRun attestation
-_manifests := ec.oci.image_manifests(lib.pipelinerun_bundle_refs)
-
 # METADATA
 # title: Build task contains steps
 # description: >-
@@ -156,7 +153,7 @@ _trusted_build_task_error(tasks) := error if {
 	count(tasks) == 0
 	error := "No Pipeline Tasks built the image"
 } else := error if {
-	untrusted_tasks := tekton.untrusted_task_refs(lib.tasks_from_pipelinerun, _manifests)
+	untrusted_tasks := tekton.untrusted_task_refs(lib.tasks_from_pipelinerun)
 	untrusted_build_tasks = untrusted_tasks & tasks
 	count(untrusted_build_tasks) > 0
 

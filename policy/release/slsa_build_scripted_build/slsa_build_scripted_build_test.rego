@@ -29,7 +29,6 @@ test_all_good if {
 	lib.assert_empty(slsa_build_scripted_build.deny) with input.image as image
 		with input.attestations as [_mock_attestation(tasks)]
 		with data.trusted_tasks as trusted_tasks
-		with ec.oci.image_manifests as _mock_image_manifests
 }
 
 # It's unclear if this should be allowed or not. This unit test exists to
@@ -57,7 +56,6 @@ test_scattered_results if {
 		expected,
 		slsa_build_scripted_build.deny,
 	) with input.attestations as [_mock_attestation(tasks)]
-		with ec.oci.image_manifests as _mock_image_manifests
 }
 
 test_missing_task_steps if {
@@ -79,7 +77,6 @@ test_missing_task_steps if {
 		expected,
 		slsa_build_scripted_build.deny,
 	) with input.attestations as [_mock_attestation(tasks)]
-		with ec.oci.image_manifests as _mock_image_manifests
 }
 
 test_empty_task_steps if {
@@ -101,7 +98,6 @@ test_empty_task_steps if {
 		expected,
 		slsa_build_scripted_build.deny,
 	) with input.attestations as [_mock_attestation(tasks)]
-		with ec.oci.image_manifests as _mock_image_manifests
 }
 
 test_build_script_used_many_build_tasks if {
@@ -128,7 +124,6 @@ test_build_script_used_many_build_tasks if {
 
 	# all good
 	lib.assert_empty(slsa_build_scripted_build.deny) with input.attestations as [_mock_attestation(tasks)]
-		with ec.oci.image_manifests as _mock_image_manifests
 
 	# one of the build tasks doesn't have any steps
 	expected_scripted := {{
@@ -142,7 +137,6 @@ test_build_script_used_many_build_tasks if {
 		"op": "remove",
 		"path": "1/steps",
 	}]))]
-		with ec.oci.image_manifests as _mock_image_manifests
 
 	# one of the build tasks produces the expected results, the other one doesn't, this is ok
 	lib.assert_empty(slsa_build_scripted_build.deny) with input.attestations as [_mock_attestation(json.patch(tasks, [{
@@ -150,7 +144,6 @@ test_build_script_used_many_build_tasks if {
 		"path": "1/results/0/value",
 		"value": "something-else",
 	}]))]
-		with ec.oci.image_manifests as _mock_image_manifests
 
 	# none of the build tasks produced the expected results
 	expected_results := {{
@@ -172,7 +165,6 @@ test_build_script_used_many_build_tasks if {
 			"value": "something-else",
 		},
 	]))]
-		with ec.oci.image_manifests as _mock_image_manifests
 }
 
 test_results_missing_value_url if {
@@ -194,7 +186,6 @@ test_results_missing_value_url if {
 		expected,
 		slsa_build_scripted_build.deny,
 	) with input.attestations as [_mock_attestation(tasks)]
-		with ec.oci.image_manifests as _mock_image_manifests
 }
 
 test_results_missing_value_digest if {
@@ -216,7 +207,6 @@ test_results_missing_value_digest if {
 		expected,
 		slsa_build_scripted_build.deny,
 	) with input.attestations as [_mock_attestation(tasks)]
-		with ec.oci.image_manifests as _mock_image_manifests
 }
 
 test_results_empty_value_url if {
@@ -238,7 +228,6 @@ test_results_empty_value_url if {
 		expected,
 		slsa_build_scripted_build.deny,
 	) with input.attestations as [_mock_attestation(tasks)]
-		with ec.oci.image_manifests as _mock_image_manifests
 }
 
 test_results_empty_value_digest if {
@@ -260,7 +249,6 @@ test_results_empty_value_digest if {
 		expected,
 		slsa_build_scripted_build.deny,
 	) with input.attestations as [_mock_attestation(tasks)]
-		with ec.oci.image_manifests as _mock_image_manifests
 }
 
 test_subject_mismatch if {
@@ -282,7 +270,6 @@ test_subject_mismatch if {
 		expected,
 		slsa_build_scripted_build.deny,
 	) with input.attestations as [_mock_attestation(tasks)]
-		with ec.oci.image_manifests as _mock_image_manifests
 }
 
 test_subject_with_tag_and_digest_is_good if {
@@ -306,7 +293,6 @@ test_subject_with_tag_and_digest_is_good if {
 			"buildConfig": {"tasks": tasks},
 		},
 	}}]
-		with ec.oci.image_manifests as _mock_image_manifests
 }
 
 test_subject_with_tag_and_digest_mismatch_tag_is_good if {
@@ -359,7 +345,6 @@ test_subject_with_tag_and_digest_mismatch_digest_fails if {
 			"buildConfig": {"tasks": tasks},
 		},
 	}}]
-		with ec.oci.image_manifests as _mock_image_manifests
 }
 
 test_image_built_by_trusted_task_no_build_task if {
@@ -388,7 +373,6 @@ test_image_built_by_trusted_task_no_build_task if {
 
 	lib.assert_equal_results(expected, slsa_build_scripted_build.deny) with input.image as image
 		with input.attestations as [att]
-		with ec.oci.image_manifests as _mock_image_manifests
 }
 
 test_image_built_by_trusted_task_not_trusted if {
@@ -418,7 +402,6 @@ test_image_built_by_trusted_task_not_trusted if {
 
 	lib.assert_equal_results(expected, slsa_build_scripted_build.deny) with input.image as image
 		with input.attestations as [_mock_attestation(tasks)]
-		with ec.oci.image_manifests as _mock_image_manifests
 }
 
 test_image_built_by_multiple_not_trusted_tasks if {
@@ -465,7 +448,6 @@ test_image_built_by_multiple_not_trusted_tasks if {
 
 	lib.assert_equal_results(expected, slsa_build_scripted_build.deny) with input.image as image
 		with input.attestations as [_mock_attestation(tasks)]
-		with ec.oci.image_manifests as _mock_image_manifests
 }
 
 _image_url := "some.image/foo:bar"
@@ -506,10 +488,3 @@ generate_subjects(tasks) := [subject |
 		"digest": {_image_digest_algorithm: _image_digest_value},
 	}
 ]
-
-# Mock function for ec.oci.image_manifests
-# Returns a map of bundle_ref -> manifest for test bundles
-_mock_image_manifests(refs) := {ref: manifest |
-	some ref in refs
-	manifest := {}
-}
