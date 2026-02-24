@@ -9,10 +9,9 @@ single_test_case(branch, expected_results) if {
 	mock_input := {"attestations": [{"statement": {"predicate": {"buildConfig": {"tasks": [{"invocation": {"environment": {"annotations": {"build.appstudio.redhat.com/target_branch": branch}}}}]}}}}]}
 
 	mock_rule_data := [
-		"^c10s$",
-		"^c9s$",
-		"^rhel-10.[0-9]+$",
-		"^rhel-9\\.[0-9]\\.[0-9]$",
+		"^c[0-9]+s$",
+		"^rhel-10\\.[0-9]+$",
+		"^rhel-[0-9]+\\.[0-9]\\.0$",
 		"^rhel-[0-9]+-main$",
 		"branch[0-9]+-rhel-[0-9]+.[0-9]+.[0-9]+$",
 	]
@@ -32,7 +31,7 @@ test_allow_with_main_branch if {
 }
 
 test_allow_with_release_branch if {
-	single_test_case("rhel-10.1", [])
+	single_test_case("rhel-10.1.0", [])
 }
 
 test_allow_with_c10s_branch if {
@@ -62,20 +61,43 @@ test_deny_with_unmatched_branch if {
 	single_test_case("release-1", expected)
 }
 
-# Tests for ^c10s$ regex pattern
-test_c10s_exact_match if {
-	single_test_case("c10s", [])
+# Tests for ^c[0-9]+s$ regex pattern
+test_c_stream_single_digit if {
+	single_test_case("c1s", [])
+	single_test_case("c9s", [])
 }
 
-test_c10s_with_suffix_denied if {
+test_c_stream_multi_digit if {
+	single_test_case("c10s", [])
+	single_test_case("c100s", [])
+	single_test_case("c999s", [])
+}
+
+test_c_stream_no_digits_denied if {
 	expected := {{
 		"code": "git_branch.git_branch",
-		"msg": "Build target is c10s-beta which is not a trusted target branch",
+		"msg": "Build target is cs which is not a trusted target branch",
 	}}
-	single_test_case("c10s-beta", expected)
+	single_test_case("cs", expected)
 }
 
-test_c10s_with_prefix_denied if {
+test_c_stream_no_s_suffix_denied if {
+	expected := {{
+		"code": "git_branch.git_branch",
+		"msg": "Build target is c10 which is not a trusted target branch",
+	}}
+	single_test_case("c10", expected)
+}
+
+test_c_stream_double_s_denied if {
+	expected := {{
+		"code": "git_branch.git_branch",
+		"msg": "Build target is c10ss which is not a trusted target branch",
+	}}
+	single_test_case("c10ss", expected)
+}
+
+test_c_stream_with_prefix_denied if {
 	expected := {{
 		"code": "git_branch.git_branch",
 		"msg": "Build target is xc10s which is not a trusted target branch",
@@ -83,39 +105,91 @@ test_c10s_with_prefix_denied if {
 	single_test_case("xc10s", expected)
 }
 
-# Tests for ^rhel-10.[0-9]+$ regex pattern
-test_rhel10_single_digit_minor if {
+test_c_stream_with_suffix_denied if {
+	expected := {{
+		"code": "git_branch.git_branch",
+		"msg": "Build target is c10s-beta which is not a trusted target branch",
+	}}
+	single_test_case("c10s-beta", expected)
+}
+
+test_c_stream_uppercase_denied if {
+	expected := {{
+		"code": "git_branch.git_branch",
+		"msg": "Build target is C10S which is not a trusted target branch",
+	}}
+	single_test_case("C10S", expected)
+}
+
+test_rhel_version_multi_digit_major_no_patch if {
 	single_test_case("rhel-10.1", [])
-	single_test_case("rhel-10.9", [])
 }
 
-test_rhel10_multi_digit_minor if {
-	single_test_case("rhel-10.99", [])
-	single_test_case("rhel-10.123", [])
+# Tests for ^rhel-[0-9]+\.[0-9](\.[0-9])?$ regex pattern - with patch version
+test_rhel_version_single_digit_major_minor_patch if {
+	single_test_case("rhel-8.0.0", [])
+	single_test_case("rhel-9.9.0", [])
 }
 
-test_rhel10_no_minor_denied if {
+test_rhel_version_multi_digit_major_with_patch if {
+	single_test_case("rhel-10.1.0", [])
+	single_test_case("rhel-11.9.0", [])
+}
+
+test_rhel_version_no_minor_denied if {
 	expected := {{
 		"code": "git_branch.git_branch",
-		"msg": "Build target is rhel-10 which is not a trusted target branch",
+		"msg": "Build target is rhel-9 which is not a trusted target branch",
 	}}
-	single_test_case("rhel-10", expected)
+	single_test_case("rhel-9", expected)
 }
 
-test_rhel10_with_patch_denied if {
+test_rhel_version_multi_digit_minor_denied if {
 	expected := {{
 		"code": "git_branch.git_branch",
-		"msg": "Build target is rhel-10.1.1 which is not a trusted target branch",
+		"msg": "Build target is rhel-9.10 which is not a trusted target branch",
 	}}
-	single_test_case("rhel-10.1.1", expected)
+	single_test_case("rhel-9.10", expected)
 }
 
-test_rhel10_wrong_major_denied if {
+test_rhel_version_multi_digit_patch_denied if {
 	expected := {{
 		"code": "git_branch.git_branch",
-		"msg": "Build target is rhel-9.5 which is not a trusted target branch",
+		"msg": "Build target is rhel-9.5.10 which is not a trusted target branch",
 	}}
-	single_test_case("rhel-9.5", expected)
+	single_test_case("rhel-9.5.10", expected)
+}
+
+test_rhel_version_extra_component_denied if {
+	expected := {{
+		"code": "git_branch.git_branch",
+		"msg": "Build target is rhel-9.5.3.1 which is not a trusted target branch",
+	}}
+	single_test_case("rhel-9.5.3.1", expected)
+}
+
+test_rhel_version_with_suffix_denied if {
+	expected := {{
+		"code": "git_branch.git_branch",
+		"msg": "Build target is rhel-9.5-extra which is not a trusted target branch",
+	}}
+	single_test_case("rhel-9.5-extra", expected)
+}
+
+test_rhel_version_with_patch_suffix_denied if {
+	expected := {{
+		"code": "git_branch.git_branch",
+		"msg": "Build target is rhel-9.5.3-extra which is not a trusted target branch",
+	}}
+	single_test_case("rhel-9.5.3-extra", expected)
+}
+
+test_rhel_version_with_prefix_denied if {
+	expected := {{
+		"code": "git_branch.git_branch",
+		"msg": "Build target is feature-rhel-9.5 which is not a trusted target branch",
+	}}
+	single_test_case("feature-rhel-9.5", expected)
 }
 
 # Tests for ^rhel-[0-9]+-main$ regex pattern
@@ -192,96 +266,4 @@ test_hotfix_branch_with_extra_suffix_denied if {
 		"msg": "Build target is kernel-5.14.0-570.42.1.el9_6-branch1-rhel-9.6.0-extra which is not a trusted target branch",
 	}}
 	single_test_case("kernel-5.14.0-570.42.1.el9_6-branch1-rhel-9.6.0-extra", expected)
-}
-
-# Tests for ^c9s$ regex pattern
-test_c9s_exact_match if {
-	single_test_case("c9s", [])
-}
-
-test_c9s_with_suffix_denied if {
-	expected := {{
-		"code": "git_branch.git_branch",
-		"msg": "Build target is c9s-beta which is not a trusted target branch",
-	}}
-	single_test_case("c9s-beta", expected)
-}
-
-test_c9s_with_prefix_denied if {
-	expected := {{
-		"code": "git_branch.git_branch",
-		"msg": "Build target is xc9s which is not a trusted target branch",
-	}}
-	single_test_case("xc9s", expected)
-}
-
-test_c9s_uppercase_denied if {
-	expected := {{
-		"code": "git_branch.git_branch",
-		"msg": "Build target is C9S which is not a trusted target branch",
-	}}
-	single_test_case("C9S", expected)
-}
-
-# Tests for ^rhel-9\.[0-9]\.[0-9]$ regex pattern
-test_rhel9_single_digit_minor_patch if {
-	single_test_case("rhel-9.0.0", [])
-	single_test_case("rhel-9.5.3", [])
-	single_test_case("rhel-9.9.9", [])
-}
-
-test_rhel9_multi_digit_minor_denied if {
-	expected := {{
-		"code": "git_branch.git_branch",
-		"msg": "Build target is rhel-9.10.0 which is not a trusted target branch",
-	}}
-	single_test_case("rhel-9.10.0", expected)
-}
-
-test_rhel9_multi_digit_patch_denied if {
-	expected := {{
-		"code": "git_branch.git_branch",
-		"msg": "Build target is rhel-9.5.10 which is not a trusted target branch",
-	}}
-	single_test_case("rhel-9.5.10", expected)
-}
-
-test_rhel9_missing_patch_denied if {
-	expected := {{
-		"code": "git_branch.git_branch",
-		"msg": "Build target is rhel-9.5 which is not a trusted target branch",
-	}}
-	single_test_case("rhel-9.5", expected)
-}
-
-test_rhel9_missing_minor_and_patch_denied if {
-	expected := {{
-		"code": "git_branch.git_branch",
-		"msg": "Build target is rhel-9 which is not a trusted target branch",
-	}}
-	single_test_case("rhel-9", expected)
-}
-
-test_rhel9_wrong_major_version_denied if {
-	expected := {{
-		"code": "git_branch.git_branch",
-		"msg": "Build target is rhel-8.5.3 which is not a trusted target branch",
-	}}
-	single_test_case("rhel-8.5.3", expected)
-}
-
-test_rhel9_with_extra_suffix_denied if {
-	expected := {{
-		"code": "git_branch.git_branch",
-		"msg": "Build target is rhel-9.5.3-extra which is not a trusted target branch",
-	}}
-	single_test_case("rhel-9.5.3-extra", expected)
-}
-
-test_rhel9_with_prefix_denied if {
-	expected := {{
-		"code": "git_branch.git_branch",
-		"msg": "Build target is feature-rhel-9.5.3 which is not a trusted target branch",
-	}}
-	single_test_case("feature-rhel-9.5.3", expected)
 }
