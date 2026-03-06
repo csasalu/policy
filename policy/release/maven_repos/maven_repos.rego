@@ -1,70 +1,67 @@
-package policy.release.maven_repos
+# METADATA
+# title: All maven artifacts have known repository URLs
+# description: >-
+#   Each Maven package listed in an SBOM must specify the repository URL that it
+#   comes from, and that URL must be present in the list of known and permitted
+#   Maven repositories. If no URL is specified, the package is assumed to come
+#   from Maven Central. Supports both CycloneDX and SPDX formats.
+# custom:
+#   short_name: urls_known
+#   failure_msg: 'Maven repo URL check failed: %s'
+#   solution: >-
+#     Ensure every maven artifact comes from a known and permitted repository URL,
+#     and that the data in the SBOM correctly records that. If using Maven Central,
+#     ensure it is included in the allowed list.
+#   collections:
+#   - redhat
+#   - redhat_maven
+#   effective_on: "2024-11-10T00:00:00Z"
+#
+package release.maven_repos
 
-import data.lib
-import data.lib.sbom_spdx
+import future.keywords.contains
 import future.keywords.if
 import future.keywords.in
 
-# METADATA
-# title: Maven SPDX SBOM Source Verification (Strict)
-# description: >-
-#   Enforces a strict allow-list for Maven repositories.
-#   Only URLs in the approved or warn lists are permitted.
-# custom:
-#   short_name: maven_spdx_strict_check
-#   failure_msg: "SBOM references an unauthorized source: %s"
-#   solution: >-
-#     The repository used is not on the authorized list. Please use
-#     internal mirrors or request the URL be added to the allowed list.
-#   collections:
-#     - redhat_maven
-#   severity: failure
+import data.lib
+import data.lib.sbom.maven
 
 deny contains result if {
-	some ref in sbom_spdx.external_document_refs
-	url := ref.externalDocumentId
+	# Ensure policy data exists before running
+	count(_rule_data_errors) == 0
 
-	not _is_approved(url)
-	not _is_in_warn_list(url)
-
-	msg := sprintf("CRITICAL: Source %q is unauthorized. It is not in the approved or warn lists.", [url])
-	result := lib.result_helper_with_term(rego.metadata.chain(), [msg], url)
+	some bad_purl, msg in _repo_url_errors
+	result := lib.result_helper_with_term(rego.metadata.chain(), [msg], bad_purl)
 }
 
-# METADATA
-# title: Maven SPDX SBOM Source Verification (Warn)
-# description: >-
-#   Identifies Maven repositories that are permitted but discouraged.
-#   These sources should be migrated to an approved internal mirror.
-# custom:
-#   short_name: maven_spdx_unverified_check
-#   failure_msg: "SBOM references an unverified source: %s"
-#   solution: >-
-#     The repository used is on the warn list. Please plan to migrate
-#     this dependency to an approved internal mirror.
-#   collections:
-#     - redhat_maven
-#   severity: warning
+# --- Internal Helper Logic ---
 
-warn contains result if {
-	some ref in sbom_spdx.external_document_refs
-	url := ref.externalDocumentId
+_repo_url_errors[purl] := msg if {
+	some pkg in maven.packages
+	purl := pkg.purl
 
-	_is_in_warn_list(url)
+	# Fallback to Maven Central if URL is missing
+	source := _get_effective_url(pkg.repository_url)
 
-	# We don't warn if it's already approved (though lists should be distinct)
-	not _is_approved(url)
+	not _url_is_permitted(source)
 
-	msg := sprintf("WARNING: Source %q is on the monitored 'warn' list. Please migrate to an approved mirror.", [url])
-	result := lib.result_helper_with_term(rego.metadata.chain(), [msg], url)
+	msg := sprintf("Package %q (source: %q) is not in the permitted list", [purl, source])
 }
 
-_is_approved(url) if {
-	some approved_url in data.conforma.release.maven_repos.approved_urls
-	startswith(url, approved_url)
+# Defaulting Logic
+_get_effective_url(url) := url if {
+	url != ""
+} else := "https://repo.maven.apache.org/maven2/"
+
+# Permission Check
+_url_is_permitted(url) if {
+	permitted := lib.rule_data("allowed_maven_repositories")
+	url in permitted
 }
 
-_is_in_warn_list(url) if {
-	some warn_url in data.conforma.release.maven_repos.warn_urls
-	startswith(url, warn_url)
+# Data Validation
+_rule_data_errors contains msg if {
+	key := "allowed_maven_repositories"
+	not lib.rule_data(key)
+	msg := sprintf("Policy data is missing the required %q list", [key])
 }

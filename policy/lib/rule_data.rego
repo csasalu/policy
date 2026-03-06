@@ -2,6 +2,11 @@ package lib
 
 import rego.v1
 
+rule_data_custom := {"allowed_maven_repositories": [
+	"https://repo.maven.apache.org/maven2/",
+	"https://maven.repository.redhat.com/ga/",
+]}
+
 # Values in data.rule_data_custom or data.rule_data
 # will take precedence over these defaults.
 #
