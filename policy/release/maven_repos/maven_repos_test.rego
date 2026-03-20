@@ -79,7 +79,8 @@ test_spdx_default_fail if {
 test_missing_rule_data if {
 	expected := {{
 		"code": "release.maven_repos.policy_data_missing",
-		"effective_on": "2026-05-10T00:00:00Z",
+		"collections": ["policy_data"],
+		"effective_on": "2022-01-01T00:00:00Z",
 		"msg": "Policy data is missing the required \"allowed_maven_repositories\" list",
 	}}
 	lib.assert_equal(deny, expected) with data.rule_data as {}
@@ -107,4 +108,48 @@ test_rule_data_errors_when_empty_array if {
 	errors := data.release.maven_repos._rule_data_errors with data.rule_data as mock_data
 
 	count(errors) == 1
+}
+
+test_cyclonedx_multiple_refs_behavior if {
+	mock_cdx := {"packages": [{
+		"name": "multi-ref-lib",
+		"purl": "pkg:maven/org.example/multi@1.0",
+		"externalRefs": [
+			{
+				"type": "distribution",
+				"url": "https://first.repo.com",
+			},
+			{
+				"type": "artifact-repository",
+				"url": "https://second.repo.com",
+			},
+		],
+	}]}
+
+	pkg_list := data.lib.sbom.maven.packages with data.lib.cyclonedx as mock_cdx
+
+	some pkg in pkg_list
+	pkg.repository_url in {"https://first.repo.com", "https://second.repo.com"}
+}
+
+test_spdx_multiple_refs_behavior if {
+	mock_spdx := {"packages": [{
+		"name": "multi-ref-spdx",
+		"purl": "pkg:maven/org.example/spdx@1.0",
+		"externalRefs": [
+			{
+				"referenceType": "repository",
+				"referenceLocator": "https://primary.repo.com",
+			},
+			{
+				"referenceType": "distribution",
+				"referenceLocator": "https://mirror.repo.com",
+			},
+		],
+	}]}
+
+	pkg_list := data.lib.sbom.maven.packages with data.lib.spdx as mock_spdx
+
+	some pkg in pkg_list
+	pkg.repository_url in {"https://primary.repo.com", "https://mirror.repo.com"}
 }

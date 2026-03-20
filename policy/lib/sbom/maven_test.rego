@@ -72,3 +72,37 @@ test_combined_sources if {
 
 	count(res) == 2
 }
+
+test_cyclonedx_multiple_repo_capture if {
+	mock_cdx := {"packages": [{
+		"name": "multi-repo-lib",
+		"purl": "pkg:maven/org.example/multi@1.0",
+		"externalRefs": [
+			{"type": "distribution", "url": "https://repo-a.com"},
+			{"type": "artifact-repository", "url": "https://repo-b.com"},
+		],
+	}]}
+
+	pkg_list := maven.packages with data.lib.cyclonedx as mock_cdx
+
+	count(pkg_list) == 2
+	urls := {p.repository_url | some p in pkg_list}
+	urls == {"https://repo-a.com", "https://repo-b.com"}
+}
+
+test_spdx_multiple_repo_capture if {
+	mock_spdx := {"packages": [{
+		"name": "multi-repo-spdx",
+		"purl": "pkg:maven/org.example/spdx@1.0",
+		"externalRefs": [
+			{"referenceType": "repository", "referenceLocator": "https://primary.io"},
+			{"referenceType": "distribution", "referenceLocator": "https://mirror.io"},
+		],
+	}]}
+
+	pkg_list := maven.packages with data.lib.spdx as mock_spdx
+
+	count(pkg_list) == 2
+	urls := {p.repository_url | some p in pkg_list}
+	urls == {"https://primary.io", "https://mirror.io"}
+}
